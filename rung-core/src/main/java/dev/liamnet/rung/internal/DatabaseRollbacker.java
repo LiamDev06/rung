@@ -76,7 +76,7 @@ public final class DatabaseRollbacker {
         final MigrationFile migration = load(applied.script());
         if (!migration.hasDown()) {
             throw new IllegalStateException("Migration " + applied.script() + " in module '" + module
-                    + "' has no '-- +migrate Down' section, so it cannot be rolled back.");
+                    + "' has no '-- +migrate down' section, so it cannot be rolled back.");
         }
 
         return migration.downSql();

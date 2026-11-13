@@ -19,10 +19,10 @@ Small SQL migration engine for Java where every module owns its own migrations a
 Named `V<number>__<description>.sql`. The number can be a sequence (`V001`) or a timestamp (`V20261113120000`).
 
 ```sql
--- +migrate Up
+-- +migrate up
 CREATE TABLE widget (id INT PRIMARY KEY);
 
--- +migrate Down
+-- +migrate down
 DROP TABLE widget;
 ```
 
@@ -98,10 +98,10 @@ All four are optional. Define your own `MigrationEngine` bean to replace the con
 `validate` checks files without a database:
 
 - file names that are not `V<number>__<description>.sql`
-- files with no `-- +migrate Up` section
+- files with no `-- +migrate up` section
 - two files in a module sharing a version (`V1` and `V001` count as the same)
 - module names that are not `[a-z0-9_]+`
-- missing `-- +migrate Down` sections, reported as warnings
+- missing `-- +migrate down` sections, reported as warnings
 
 From the CLI, `rung validate --dir <root>` exits non-zero on errors, and on warnings too with `--strict`. In a test:
 

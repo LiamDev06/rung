@@ -1,5 +1,5 @@
--- +migrate Up
+-- +migrate up
 CREATE TABLE shop_item (id INT PRIMARY KEY);
 
--- +migrate Down
+-- +migrate down
 DROP TABLE shop_item;

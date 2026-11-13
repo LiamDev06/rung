@@ -15,8 +15,8 @@ import picocli.CommandLine.ParseResult;
 class MigrationRunnerTests {
 
     private static final String PAIRED =
-            "-- +migrate Up\nCREATE TABLE widget (id INT);\n-- +migrate Down\nDROP TABLE widget;\n";
-    private static final String UP_ONLY = "-- +migrate Up\nCREATE TABLE widget (id INT);\n";
+            "-- +migrate up\nCREATE TABLE widget (id INT);\n-- +migrate down\nDROP TABLE widget;\n";
+    private static final String UP_ONLY = "-- +migrate up\nCREATE TABLE widget (id INT);\n";
 
     private final CommandLine cli = new CommandLine(new MigrationRunner());
     private final StringWriter output = new StringWriter();

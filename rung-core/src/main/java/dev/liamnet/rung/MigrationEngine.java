@@ -152,7 +152,7 @@ public final class MigrationEngine {
 
             if (!migration.hasDown()) {
                 problems.add(MigrationProblem.warning(
-                        module, "Migration " + script + " has no '-- +migrate Down' section."));
+                        module, "Migration " + script + " has no '-- +migrate down' section."));
             }
         });
     }

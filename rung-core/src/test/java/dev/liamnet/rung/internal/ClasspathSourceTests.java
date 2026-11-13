@@ -35,8 +35,8 @@ class ClasspathSourceTests {
             addEntry(output, "com/", null);
             addEntry(output, "com/acme/", null);
             addEntry(output, "com/acme/Widget.class", "not sql");
-            addEntry(output, "com/acme/widget/migrations/V001__create_widget.sql", "-- +migrate Up\nSELECT 1;\n");
-            addEntry(output, "com/other/widget/migrations/V001__elsewhere.sql", "-- +migrate Up\nSELECT 2;\n");
+            addEntry(output, "com/acme/widget/migrations/V001__create_widget.sql", "-- +migrate up\nSELECT 1;\n");
+            addEntry(output, "com/other/widget/migrations/V001__elsewhere.sql", "-- +migrate up\nSELECT 2;\n");
         }
 
         try (URLClassLoader classLoader =
@@ -45,7 +45,7 @@ class ClasspathSourceTests {
 
             assertThat(source.loadSqlFiles())
                     .containsOnlyKeys("widget/migrations/V001__create_widget.sql")
-                    .containsValue("-- +migrate Up\nSELECT 1;\n");
+                    .containsValue("-- +migrate up\nSELECT 1;\n");
         }
     }
 

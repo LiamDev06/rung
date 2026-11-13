@@ -1,5 +1,5 @@
--- +migrate Up
+-- +migrate up
 ALTER TABLE does_not_exist ADD COLUMN x INT;
 
--- +migrate Down
+-- +migrate down
 DROP TABLE does_not_exist;

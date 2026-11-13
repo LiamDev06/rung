@@ -1,5 +1,5 @@
--- +migrate Up
+-- +migrate up
 CREATE TABLE widget_draft (id INT PRIMARY KEY);
 
--- +migrate Down
+-- +migrate down
 DROP TABLE widget_draft;

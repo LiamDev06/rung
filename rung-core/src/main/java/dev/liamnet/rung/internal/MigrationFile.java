@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
 public record MigrationFile(String version, String script, String upSql, String downSql) {
 
     private static final Pattern NAME = Pattern.compile("^V(\\d+)__.+\\.sql$");
-    private static final Pattern UP_MARKER = Pattern.compile("^\\s*--\\s*\\+migrate\\s+Up\\s*$");
-    private static final Pattern DOWN_MARKER = Pattern.compile("^\\s*--\\s*\\+migrate\\s+Down\\s*$");
+    private static final Pattern UP_MARKER = Pattern.compile("^\\s*--\\s*\\+migrate\\s+up\\s*$");
+    private static final Pattern DOWN_MARKER = Pattern.compile("^\\s*--\\s*\\+migrate\\s+down\\s*$");
 
     public static MigrationFile parse(final String script, final String content) {
         final Matcher name = NAME.matcher(script);
@@ -40,7 +40,7 @@ public record MigrationFile(String version, String script, String upSql, String 
         }
 
         if (!sawUp) {
-            throw new IllegalArgumentException("Migration " + script + " has no '-- +migrate Up' section.");
+            throw new IllegalArgumentException("Migration " + script + " has no '-- +migrate up' section.");
         }
 
         return new MigrationFile(

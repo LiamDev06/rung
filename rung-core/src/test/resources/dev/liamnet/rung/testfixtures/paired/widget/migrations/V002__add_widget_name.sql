@@ -1,5 +1,5 @@
--- +migrate Up
+-- +migrate up
 ALTER TABLE widget ADD COLUMN name varchar(255);
 
--- +migrate Down
+-- +migrate down
 ALTER TABLE widget DROP COLUMN name;

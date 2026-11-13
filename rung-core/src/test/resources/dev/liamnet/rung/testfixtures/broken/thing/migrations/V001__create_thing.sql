@@ -1,5 +1,5 @@
--- +migrate Up
+-- +migrate up
 CREATE TABLE thing (id INT PRIMARY KEY);
 
--- +migrate Down
+-- +migrate down
 DROP TABLE thing;

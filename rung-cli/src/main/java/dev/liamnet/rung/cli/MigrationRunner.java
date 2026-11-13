@@ -139,7 +139,7 @@ public final class MigrationRunner implements Runnable {
         @Mixin
         SourceOptions source;
 
-        @Option(names = "--strict", description = "Treat warnings (such as a missing Down section) as failures.")
+        @Option(names = "--strict", description = "Treat warnings (such as a missing down section) as failures.")
         boolean strict;
 
         @Override

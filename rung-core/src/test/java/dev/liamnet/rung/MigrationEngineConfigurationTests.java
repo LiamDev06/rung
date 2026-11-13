@@ -17,7 +17,7 @@ class MigrationEngineConfigurationTests {
 
     private static final String PAIRED = "dev.liamnet.rung.testfixtures.paired";
     private static final String CREATE_WIDGET =
-            "-- +migrate Up\nCREATE TABLE widget (id INT PRIMARY KEY);\n-- +migrate Down\nDROP TABLE widget;\n";
+            "-- +migrate up\nCREATE TABLE widget (id INT PRIMARY KEY);\n-- +migrate down\nDROP TABLE widget;\n";
 
     @Test
     void customTablePrefixNamesTheHistoryTable() {
@@ -50,7 +50,7 @@ class MigrationEngineConfigurationTests {
     @Test
     void customLayoutReadsMigrationsFromACentralFolder(@TempDir final Path dir) throws IOException {
         write(dir, "widget/V001__create_widget.sql", CREATE_WIDGET);
-        write(dir, "widget/migrations/V002__ignored_by_this_layout.sql", "-- +migrate Up\nSELECT broken;\n");
+        write(dir, "widget/migrations/V002__ignored_by_this_layout.sql", "-- +migrate up\nSELECT broken;\n");
         final SimpleDataSource dataSource = h2DataSource("config_layout");
         final MigrationEngine engine =
                 MigrationEngine.builder().directory(dir).layout("{module}").build();
@@ -107,7 +107,7 @@ class MigrationEngineConfigurationTests {
         write(
                 dir,
                 "widget/migrations/V20261114090000__add_name.sql",
-                "-- +migrate Up\nALTER TABLE widget ADD COLUMN name varchar(255);\n");
+                "-- +migrate up\nALTER TABLE widget ADD COLUMN name varchar(255);\n");
         final SimpleDataSource dataSource = h2DataSource("config_timestamps");
 
         MigrationEngine.forDirectory(dir).migrate(dataSource);
@@ -126,7 +126,7 @@ class MigrationEngineConfigurationTests {
         write(dir, "widget/migrations/V002__no_up.sql", "CREATE TABLE widget (id INT);\n");
         write(dir, "widget/migrations/V003__first.sql", CREATE_WIDGET);
         write(dir, "widget/migrations/V3__second.sql", CREATE_WIDGET);
-        write(dir, "widget/migrations/V004__no_down.sql", "-- +migrate Up\nSELECT 1;\n");
+        write(dir, "widget/migrations/V004__no_down.sql", "-- +migrate up\nSELECT 1;\n");
         write(dir, "widget/migrations/_V005__draft.sql", "anything goes");
         write(dir, "Bad-Name/migrations/V001__create.sql", CREATE_WIDGET);
 
@@ -139,9 +139,9 @@ class MigrationEngineConfigurationTests {
                         "error [Bad-Name] Module name must match [a-z0-9_]+.",
                         "error [widget] Migration file must be named V<version>__<description>.sql,"
                                 + " but was: create_widget.sql",
-                        "error [widget] Migration V002__no_up.sql has no '-- +migrate Up' section.",
+                        "error [widget] Migration V002__no_up.sql has no '-- +migrate up' section.",
                         "error [widget] Version 3 is used by both V003__first.sql and V3__second.sql.",
-                        "warning [widget] Migration V004__no_down.sql has no '-- +migrate Down' section.");
+                        "warning [widget] Migration V004__no_down.sql has no '-- +migrate down' section.");
     }
 
     private static void write(final Path root, final String relativePath, final String content) throws IOException {

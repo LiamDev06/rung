@@ -1,9 +1,9 @@
--- +migrate Up
+-- +migrate up
 CREATE TABLE widget (id INT PRIMARY KEY);
 
 CREATE INDEX idx_widget_id ON widget (id);
 
--- +migrate Down
+-- +migrate down
 DROP INDEX idx_widget_id;
 
 DROP TABLE widget;

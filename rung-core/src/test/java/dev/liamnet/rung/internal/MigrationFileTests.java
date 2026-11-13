@@ -9,10 +9,10 @@ class MigrationFileTests {
 
     @Test
     void parsesVersionAndUpAndDownSections() {
-        final String content = "-- +migrate Up\n"
+        final String content = "-- +migrate up\n"
                 + "CREATE TABLE widget (id int);\n"
                 + "\n"
-                + "-- +migrate Down\n"
+                + "-- +migrate down\n"
                 + "DROP TABLE widget;\n";
 
         final MigrationFile migration = MigrationFile.parse("V001__create_widget.sql", content);
@@ -27,7 +27,7 @@ class MigrationFileTests {
     @Test
     void treatsAMissingDownSectionAsNotRollbackable() {
         final MigrationFile migration =
-                MigrationFile.parse("V002__add_only.sql", "-- +migrate Up\nALTER TABLE widget ADD COLUMN x int;\n");
+                MigrationFile.parse("V002__add_only.sql", "-- +migrate up\nALTER TABLE widget ADD COLUMN x int;\n");
 
         assertThat(migration.hasDown()).isFalse();
         assertThat(migration.downSql()).isEmpty();
@@ -35,14 +35,21 @@ class MigrationFileTests {
 
     @Test
     void rejectsAFileWithoutAnUpSection() {
-        assertThatThrownBy(() -> MigrationFile.parse("V001__x.sql", "-- +migrate Down\nDROP TABLE widget;\n"))
+        assertThatThrownBy(() -> MigrationFile.parse("V001__x.sql", "-- +migrate down\nDROP TABLE widget;\n"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("no '-- +migrate Up' section");
+                .hasMessageContaining("no '-- +migrate up' section");
+    }
+
+    @Test
+    void markersMustBeLowercase() {
+        assertThatThrownBy(() -> MigrationFile.parse("V001__x.sql", "-- +migrate Up\nSELECT 1;\n"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no '-- +migrate up' section");
     }
 
     @Test
     void rejectsAFileNameThatIsNotVersioned() {
-        assertThatThrownBy(() -> MigrationFile.parse("create_widget.sql", "-- +migrate Up\nSELECT 1;\n"))
+        assertThatThrownBy(() -> MigrationFile.parse("create_widget.sql", "-- +migrate up\nSELECT 1;\n"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("V<version>__<description>.sql");
     }
@@ -50,11 +57,11 @@ class MigrationFileTests {
     @Test
     void checksumTracksTheUpBlockButIgnoresTheDown() {
         final MigrationFile original = MigrationFile.parse(
-                "V001__x.sql", "-- +migrate Up\nCREATE TABLE a (id int);\n-- +migrate Down\nDROP TABLE a;\n");
+                "V001__x.sql", "-- +migrate up\nCREATE TABLE a (id int);\n-- +migrate down\nDROP TABLE a;\n");
         final MigrationFile editedDown = MigrationFile.parse(
-                "V001__x.sql", "-- +migrate Up\nCREATE TABLE a (id int);\n-- +migrate Down\nDROP TABLE a CASCADE;\n");
+                "V001__x.sql", "-- +migrate up\nCREATE TABLE a (id int);\n-- +migrate down\nDROP TABLE a CASCADE;\n");
         final MigrationFile editedUp = MigrationFile.parse(
-                "V001__x.sql", "-- +migrate Up\nCREATE TABLE b (id int);\n-- +migrate Down\nDROP TABLE a;\n");
+                "V001__x.sql", "-- +migrate up\nCREATE TABLE b (id int);\n-- +migrate down\nDROP TABLE a;\n");
 
         assertThat(editedDown.checksum()).isEqualTo(original.checksum());
         assertThat(editedUp.checksum()).isNotEqualTo(original.checksum());
@@ -62,9 +69,9 @@ class MigrationFileTests {
 
     @Test
     void checksumIgnoresLineEndingStyle() {
-        final MigrationFile lfFile = MigrationFile.parse("V001__x.sql", "-- +migrate Up\nCREATE TABLE a (id int);\n");
+        final MigrationFile lfFile = MigrationFile.parse("V001__x.sql", "-- +migrate up\nCREATE TABLE a (id int);\n");
         final MigrationFile crlfFile =
-                MigrationFile.parse("V001__x.sql", "-- +migrate Up\r\nCREATE TABLE a (id int);\r\n");
+                MigrationFile.parse("V001__x.sql", "-- +migrate up\r\nCREATE TABLE a (id int);\r\n");
 
         assertThat(crlfFile.checksum()).isEqualTo(lfFile.checksum());
     }

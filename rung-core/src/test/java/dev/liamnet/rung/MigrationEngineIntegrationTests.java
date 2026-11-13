@@ -70,8 +70,8 @@ class MigrationEngineIntegrationTests {
         final Path migrations = Files.createDirectories(dir.resolve("widget/migrations"));
         Files.writeString(
                 migrations.resolve("V001__create_widget.sql"),
-                "-- +migrate Up\nCREATE TABLE widget (id INT PRIMARY KEY);\n"
-                        + "-- +migrate Down\nDROP TABLE widget;\n");
+                "-- +migrate up\nCREATE TABLE widget (id INT PRIMARY KEY);\n"
+                        + "-- +migrate down\nDROP TABLE widget;\n");
         final SimpleDataSource dataSource = h2DataSource("engine_directory");
 
         MigrationEngine.forDirectory(dir).migrate(dataSource);

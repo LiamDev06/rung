@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<ruleset name="Rung PMD Test Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Ruleset for test sources. Inherits the full main ruleset and relaxes only the rules that
+        misfire on Spring integration tests (MockMvc, Modulith, AssertJ, test helpers). Main sources
+        keep every rule via pmd-ruleset.xml.
+    </description>
+
+    <!-- Gradle gives PMD rulesets as in-memory resources, so local ruleset inheritance has no
+         stable base URI. Keep these category references explicit and mirror the production
+         exclusions here; this prevents pmdTest from depending on the caller's working directory. -->
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="GuardLogStatement"/>
+        <exclude name="ImplicitFunctionalInterface"/>
+        <exclude name="UnitTestContainsTooManyAsserts"/>
+        <exclude name="AvoidUsingHardCodedIP"/>
+        <exclude name="JUnitJupiterTestShouldBePackagePrivate"/>
+        <exclude name="SystemPrintln"/>
+        <exclude name="UnitTestShouldIncludeAssert"/>
+    </rule>
+
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="MissingSerialVersionUID"/>
+        <exclude name="UseLocaleWithCaseConversions"/>
+        <exclude name="AvoidDuplicateLiterals"/>
+        <exclude name="TestClassWithoutTestCases"/>
+    </rule>
+
+    <rule ref="category/java/codestyle.xml">
+        <exclude name="OnlyOneReturn"/>
+        <exclude name="AtLeastOneConstructor"/>
+        <exclude name="CommentDefaultAccessModifier"/>
+        <exclude name="CallSuperInConstructor"/>
+        <exclude name="UselessParentheses"/>
+        <exclude name="LongVariable"/>
+        <exclude name="ShortClassName"/>
+        <exclude name="TooManyStaticImports"/>
+        <exclude name="ShortVariable"/>
+        <exclude name="LinguisticNaming"/>
+    </rule>
+
+    <rule ref="category/java/performance.xml">
+        <exclude name="AvoidInstantiatingObjectsInLoops"/>
+    </rule>
+
+    <rule ref="category/java/design.xml">
+        <exclude name="LawOfDemeter"/>
+        <exclude name="LoosePackageCoupling"/>
+        <exclude name="DataClass"/>
+        <exclude name="ExcessiveImports"/>
+        <exclude name="SignatureDeclareThrowsException"/>
+        <exclude name="TooManyMethods"/>
+        <exclude name="UseUtilityClass"/>
+    </rule>
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="20"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/ImmutableField">
+        <properties>
+            <property name="violationSuppressXPath"
+                      value="./ancestor::ClassDeclaration[ModifierList/Annotation[@SimpleName='Entity']]"/>
+        </properties>
+    </rule>
+</ruleset>

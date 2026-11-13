@@ -1,6 +1,6 @@
 # Rung
 
-Small SQL migration engine for Java where every module owns its own migrations and its own history.
+SQL migration engine for Java where every module owns its own migrations and its own history.
 
 - Migrations live with the module they belong to, by default in `<module>/migrations/`.
 - Each module gets its own history table (`rung_migrations_<module>`), so modules migrate and roll back independently.
@@ -13,6 +13,18 @@ Small SQL migration engine for Java where every module owns its own migrations a
 | `rung-core` | The engine, for any Java app | `slf4j-api` only |
 | `rung-spring-boot-starter` | Runs migrations on startup in a Spring Boot app | `rung-core`, Spring Boot |
 | `rung-cli` | The `rung` command | `rung-core`, picocli, the PostgreSQL driver |
+
+## Install
+
+Requires Java 17 or newer. Built for and tested on PostgreSQL; other databases are untested.
+
+```kotlin
+implementation("dev.liamnet:rung-core:1.0.0")
+// or, in a Spring Boot app:
+implementation("dev.liamnet:rung-spring-boot-starter:1.0.0")
+```
+
+The CLI is attached to each [GitHub release](https://github.com/LiamDev06/rung/releases) as a zip.
 
 ## Migration files
 
@@ -132,7 +144,7 @@ rung validate --dir src/main/java/com/example/app --strict
 ./gradlew lint
 ```
 
-Requires JDK 25.
+Building requires JDK 25; the published artifacts target Java 17.
 
 ## License
 

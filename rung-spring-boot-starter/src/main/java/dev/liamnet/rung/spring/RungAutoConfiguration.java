@@ -50,7 +50,7 @@ public class RungAutoConfiguration {
         if (AutoConfigurationPackages.has(beanFactory)) {
             final List<String> packages = AutoConfigurationPackages.get(beanFactory);
             if (!packages.isEmpty()) {
-                return packages.getFirst();
+                return packages.get(0);
             }
         }
 

@@ -1,3 +1,7 @@
+plugins {
+    id("com.vanniktech.maven.publish")
+}
+
 val springBootVersion = "4.1.1"
 
 dependencies {
@@ -8,4 +12,11 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     testRuntimeOnly("com.h2database:h2:2.4.240")
+}
+
+mavenPublishing {
+    pom {
+        name.set("Rung Spring Boot Starter")
+        description.set("Runs Rung database migrations on startup in a Spring Boot application.")
+    }
 }

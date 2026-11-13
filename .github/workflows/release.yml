@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check for a new version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Compare version with existing tags
+        id: version
+        run: |
+          version=$(grep '^version=' gradle.properties | cut -d= -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ -z "$version" || "$version" == *-SNAPSHOT ]]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "Version '$version' is not a release version; nothing to do."
+          elif git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "v$version is already released; nothing to do."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "v$version has not been released yet."
+          fi
+
+  release:
+    name: Release v${{ needs.check.outputs.version }}
+    needs: check
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build, test and lint
+        run: ./gradlew build
+      - name: Publish to Maven Central
+        run: ./gradlew publishAndReleaseToMavenCentral
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+      - name: Tag and create GitHub release with the CLI
+        run: >
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --generate-notes
+          "rung-cli/build/distributions/rung-$VERSION.zip"
+          "rung-cli/build/distributions/rung-$VERSION.tar"
+        env:
+          GH_TOKEN: ${{ github.token }}

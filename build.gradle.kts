@@ -1,12 +1,13 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
 
 plugins {
     id("com.diffplug.spotless") version "8.8.0" apply false
+    id("com.vanniktech.maven.publish") version "0.37.0" apply false
 }
 
 allprojects {
     group = "dev.liamnet"
-    version = "0.0.1"
 
     repositories {
         mavenCentral()
@@ -22,6 +23,7 @@ subprojects {
     the<JavaPluginExtension>().toolchain.languageVersion.set(JavaLanguageVersion.of(25))
 
     tasks.withType<JavaCompile>().configureEach {
+        options.release.set(17)
         options.compilerArgs.add("-parameters")
     }
 
@@ -62,5 +64,43 @@ subprojects {
 
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
+    }
+
+    tasks.withType<Javadoc>().configureEach {
+        exclude("**/internal/**")
+        (options as StandardJavadocDocletOptions).addStringOption("Xdoclint:all,-missing", "-quiet")
+    }
+
+    plugins.withId("com.vanniktech.maven.publish") {
+        configure<MavenPublishBaseExtension> {
+            publishToMavenCentral()
+            if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+                signAllPublications()
+            }
+
+            pom {
+                url.set("https://github.com/LiamDev06/rung")
+                inceptionYear.set("2026")
+                licenses {
+                    license {
+                        name.set("Apache-2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        distribution.set("repo")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("LiamDev06")
+                        name.set("Liam Hillefors")
+                        url.set("https://github.com/LiamDev06")
+                    }
+                }
+                scm {
+                    url.set("https://github.com/LiamDev06/rung")
+                    connection.set("scm:git:git://github.com/LiamDev06/rung.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/LiamDev06/rung.git")
+                }
+            }
+        }
     }
 }

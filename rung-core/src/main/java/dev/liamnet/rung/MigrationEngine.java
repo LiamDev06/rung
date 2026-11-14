@@ -241,8 +241,8 @@ public final class MigrationEngine {
     private void statusModule(final DataSource dataSource, final String module, final List<MigrationFile> migrations) {
         final SchemaHistory history = new SchemaHistory(tablePrefix, module);
         try (Connection connection = dataSource.getConnection()) {
-            history.ensureTable(connection);
-            final Map<String, String> applied = history.appliedChecksums(connection);
+            final Map<String, String> applied =
+                    history.exists(connection) ? history.appliedChecksums(connection) : Map.of();
             LOGGER.info("Module '{}':", module);
 
             for (final MigrationFile migration : migrations) {

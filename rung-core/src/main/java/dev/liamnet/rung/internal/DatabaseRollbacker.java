@@ -33,13 +33,22 @@ public final class DatabaseRollbacker {
 
     public void run() {
         try (Connection connection = dataSource.getConnection()) {
-            rollbackSteps(connection);
+            connection.setAutoCommit(true);
+
+            try (MigrationLock ignored = MigrationLock.acquire(connection, history.tableName())) {
+                rollbackSteps(connection);
+            }
         } catch (final SQLException e) {
             throw new IllegalStateException("Rollback failed for module '" + module + "'", e);
         }
     }
 
     private void rollbackSteps(final Connection connection) throws SQLException {
+        if (!history.exists(connection)) {
+            LOGGER.info("Nothing to roll back in module '{}'.", module);
+            return;
+        }
+
         for (int step = 0; step < steps; step++) {
             if (!rollbackOne(connection)) {
                 LOGGER.info("Nothing left to roll back in module '{}'.", module);

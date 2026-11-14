@@ -7,12 +7,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public final class SchemaHistory {
 
     private static final Pattern TABLE_PREFIX = Pattern.compile("[a-z_][a-z0-9_]*");
     private static final Pattern MODULE_NAME = Pattern.compile("[a-z0-9_]+");
+    private static final Set<String> UNDEFINED_TABLE_STATES = Set.of("42P01", "42S02", "42S04");
 
     private final String table;
 
@@ -38,6 +40,18 @@ public final class SchemaHistory {
 
     public String tableName() {
         return table;
+    }
+
+    public boolean exists(final Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("SELECT 1 FROM " + table + " WHERE 1 = 0");
+            return true;
+        } catch (final SQLException e) {
+            if (UNDEFINED_TABLE_STATES.contains(e.getSQLState())) {
+                return false;
+            }
+            throw e;
+        }
     }
 
     public void ensureTable(final Connection connection) throws SQLException {

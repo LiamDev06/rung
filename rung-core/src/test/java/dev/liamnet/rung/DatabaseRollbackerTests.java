@@ -94,6 +94,16 @@ class DatabaseRollbackerTests {
     }
 
     @Test
+    void rollbackOfANeverMigratedModuleDoesNothing() {
+        final SimpleDataSource dataSource = h2DataSource("rollback_never_migrated");
+        final MigrationEngine engine = MigrationEngine.forClasspath(PAIRED);
+
+        assertThatCode(() -> engine.rollback(dataSource, "widget", 1)).doesNotThrowAnyException();
+
+        assertThat(tableExists(dataSource, "rung_migrations_widget")).isFalse();
+    }
+
+    @Test
     void rejectsInvalidModuleNameBeforeTouchingTheDatabase() {
         final SimpleDataSource dataSource = h2DataSource("rollback_invalid_module");
         final MigrationEngine engine = MigrationEngine.forClasspath(PAIRED);

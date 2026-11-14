@@ -19,9 +19,9 @@ SQL migration engine for Java where every module owns its own migrations and its
 Requires Java 17 or newer. Built for and tested on PostgreSQL; other databases are untested.
 
 ```kotlin
-implementation("dev.liamnet:rung-core:1.0.0")
+implementation("dev.liamnet:rung-core:1.0.1")
 // or, in a Spring Boot app:
-implementation("dev.liamnet:rung-spring-boot-starter:1.0.0")
+implementation("dev.liamnet:rung-spring-boot-starter:1.0.1")
 ```
 
 The CLI is attached to each [GitHub release](https://github.com/LiamDev06/rung/releases) as a zip.

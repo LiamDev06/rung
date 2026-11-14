@@ -6,6 +6,7 @@ import static dev.liamnet.rung.TestDatabases.h2DataSource;
 import static dev.liamnet.rung.TestDatabases.rowCount;
 import static dev.liamnet.rung.TestDatabases.tableExists;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Files;
@@ -63,6 +64,28 @@ class MigrationEngineIntegrationTests {
 
         assertThat(tableExists(dataSource, "thing")).isTrue();
         assertThat(rowCount(dataSource, "rung_migrations_thing")).isEqualTo(1);
+    }
+
+    @Test
+    void statusOnAFreshDatabaseCreatesNothing() {
+        final SimpleDataSource dataSource = h2DataSource("engine_status_fresh");
+
+        assertThatCode(() -> MigrationEngine.forClasspath(PAIRED).status(dataSource))
+                .doesNotThrowAnyException();
+
+        assertThat(tableExists(dataSource, "rung_migrations_widget")).isFalse();
+        assertThat(tableExists(dataSource, "widget")).isFalse();
+    }
+
+    @Test
+    void statusAfterMigrateLeavesHistoryUntouched() {
+        final SimpleDataSource dataSource = h2DataSource("engine_status_migrated");
+        final MigrationEngine engine = MigrationEngine.forClasspath(PAIRED);
+        engine.migrate(dataSource);
+
+        engine.status(dataSource);
+
+        assertThat(rowCount(dataSource, "rung_migrations_widget")).isEqualTo(2);
     }
 
     @Test

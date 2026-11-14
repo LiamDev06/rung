@@ -55,7 +55,11 @@ jobs:
           java-version: 25
       - uses: gradle/actions/setup-gradle@v6
       - name: Build, test and lint
-        run: ./gradlew build
+        run: ./gradlew build :rung-cli:installDist
+      - name: Smoke test the CLI
+        run: >
+          rung-cli/build/install/rung/bin/rung validate --strict
+          --dir rung-core/src/test/resources/dev/liamnet/rung/testfixtures/paired
       - name: Publish to Maven Central
         run: ./gradlew publishAndReleaseToMavenCentral
         env:

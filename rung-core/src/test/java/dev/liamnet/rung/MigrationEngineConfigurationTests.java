@@ -18,6 +18,9 @@ class MigrationEngineConfigurationTests {
     private static final String PAIRED = "dev.liamnet.rung.testfixtures.paired";
     private static final String CREATE_WIDGET =
             "-- +migrate up\nCREATE TABLE widget (id INT PRIMARY KEY);\n-- +migrate down\nDROP TABLE widget;\n";
+    private static final String CREATE_PLAYER = "-- +migrate up\nCREATE TABLE player (id INT PRIMARY KEY);\n";
+    private static final String CREATE_BADGE =
+            "-- +migrate up\nCREATE TABLE badge (id INT PRIMARY KEY, player_id INT REFERENCES player (id));\n";
 
     @Test
     void customTablePrefixNamesTheHistoryTable() {
@@ -113,6 +116,78 @@ class MigrationEngineConfigurationTests {
         MigrationEngine.forDirectory(dir).migrate(dataSource);
 
         assertThat(rowCount(dataSource, "rung_migrations_widget")).isEqualTo(2);
+    }
+
+    @Test
+    void modulesMigrateAlphabeticallyWithoutAModuleOrder(@TempDir final Path dir) throws IOException {
+        write(dir, "badge/migrations/V001__create_badge.sql", CREATE_BADGE);
+        write(dir, "player/migrations/V001__create_player.sql", CREATE_PLAYER);
+        final SimpleDataSource dataSource = h2DataSource("config_alphabetical");
+
+        assertThatThrownBy(() -> MigrationEngine.forDirectory(dir).migrate(dataSource))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Migration failed for module 'badge'");
+    }
+
+    @Test
+    void moduleOrderMigratesTheListedModulesFirst(@TempDir final Path dir) throws IOException {
+        write(dir, "badge/migrations/V001__create_badge.sql", CREATE_BADGE);
+        write(dir, "player/migrations/V001__create_player.sql", CREATE_PLAYER);
+        final SimpleDataSource dataSource = h2DataSource("config_ordered");
+
+        MigrationEngine.builder().directory(dir).moduleOrder("player").build().migrate(dataSource);
+
+        assertThat(rowCount(dataSource, "rung_migrations_player")).isEqualTo(1);
+        assertThat(rowCount(dataSource, "rung_migrations_badge")).isEqualTo(1);
+    }
+
+    @Test
+    void unlistedModulesFollowTheModuleOrderAlphabetically(@TempDir final Path dir) throws IOException {
+        for (final String module : List.of("alpha", "beta", "mid", "zeta")) {
+            write(dir, module + "/migrations/V001__create.sql", CREATE_WIDGET);
+        }
+
+        final MigrationEngine engine = MigrationEngine.builder()
+                .directory(dir)
+                .moduleOrder("zeta", "mid")
+                .build();
+
+        assertThat(engine.discoverModules()).containsExactly("zeta", "mid", "alpha", "beta");
+    }
+
+    @Test
+    void moduleOrderNamingAnUnknownModuleFailsBeforeMigrating(@TempDir final Path dir) throws IOException {
+        write(dir, "widget/migrations/V001__create_widget.sql", CREATE_WIDGET);
+        final SimpleDataSource dataSource = h2DataSource("config_unknown_module");
+        final MigrationEngine engine =
+                MigrationEngine.builder().directory(dir).moduleOrder("wigdet").build();
+
+        assertThatThrownBy(() -> engine.migrate(dataSource))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Module order names [wigdet]");
+        assertThatThrownBy(() -> engine.status(dataSource))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Module order names [wigdet]");
+        assertThat(tableExists(dataSource, "widget")).isFalse();
+        assertThat(engine.validate())
+                .extracting(MigrationProblem::describe)
+                .containsExactly("error [wigdet] Listed in the module order, but no migrations were found for it.");
+    }
+
+    @Test
+    void rejectsAModuleOrderWithDuplicatesOrInvalidNames() {
+        assertThatThrownBy(() -> MigrationEngine.builder()
+                        .classpath(PAIRED)
+                        .moduleOrder("widget", "widget")
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("more than once");
+        assertThatThrownBy(() -> MigrationEngine.builder()
+                        .classpath(PAIRED)
+                        .moduleOrder("Bad-Name")
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid module 'Bad-Name'");
     }
 
     @Test

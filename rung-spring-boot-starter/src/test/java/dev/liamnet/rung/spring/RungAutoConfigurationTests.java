@@ -62,6 +62,32 @@ class RungAutoConfigurationTests {
     }
 
     @Test
+    void appliesTheModuleOrderProperty() {
+        runner.withPropertyValues(
+                        database("module_order"),
+                        "rung.location=classpath:db/ordered",
+                        "rung.layout={module}",
+                        "rung.module-order=player")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(rowCount(context.getBean(DataSource.class), "rung_migrations_player"))
+                            .isEqualTo(1);
+                    assertThat(rowCount(context.getBean(DataSource.class), "rung_migrations_badge"))
+                            .isEqualTo(1);
+                });
+    }
+
+    @Test
+    void migratesAlphabeticallyWithoutTheModuleOrderProperty() {
+        runner.withPropertyValues(
+                        database("no_module_order"), "rung.location=classpath:db/ordered", "rung.layout={module}")
+                .run(context -> assertThat(context)
+                        .hasFailed()
+                        .getFailure()
+                        .hasStackTraceContaining("Migration failed for module 'badge'"));
+    }
+
+    @Test
     void beansThatDependOnTheDatabaseWaitForMigrations() {
         runner.withUserConfiguration(ProbeConfiguration.class)
                 .withPropertyValues(database("ordering"), FIXTURES)

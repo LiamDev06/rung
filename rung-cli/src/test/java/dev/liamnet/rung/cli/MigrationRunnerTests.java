@@ -29,6 +29,15 @@ class MigrationRunnerTests {
         assertThat(migrate.source.dir).isEqualTo(Path.of("db"));
         assertThat(migrate.source.layout).isEqualTo("{module}/migrations");
         assertThat(migrate.database.tablePrefix).isEqualTo("rung_migrations_");
+        assertThat(migrate.source.moduleOrder).isEmpty();
+    }
+
+    @Test
+    void migrateBindsTheModuleOrder() {
+        final ParseResult result = cli.parseArgs("migrate", "--dir", "db", "--module-order", "player,rank");
+
+        final MigrationRunner.Migrate migrate = subcommand(result);
+        assertThat(migrate.source.moduleOrder).containsExactly("player", "rank");
     }
 
     @Test

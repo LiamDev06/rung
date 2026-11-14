@@ -49,8 +49,14 @@ public final class MigrationRunner implements Runnable {
                 description = "Where a module's migrations sit under the root (default: ${DEFAULT-VALUE}).")
         String layout;
 
+        @Option(
+                names = "--module-order",
+                split = ",",
+                description = "Modules to migrate first, in this order; the rest follow alphabetically.")
+        String[] moduleOrder = {};
+
         public MigrationEngine.Builder engine() {
-            return MigrationEngine.builder().directory(dir).layout(layout);
+            return MigrationEngine.builder().directory(dir).layout(layout).moduleOrder(moduleOrder);
         }
     }
 

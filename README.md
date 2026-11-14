@@ -19,9 +19,9 @@ SQL migration engine for Java where every module owns its own migrations and its
 Requires Java 17 or newer. Built for and tested on PostgreSQL; other databases are untested.
 
 ```kotlin
-implementation("dev.liamnet:rung-core:1.0.1")
+implementation("dev.liamnet:rung-core:1.1.0")
 // or, in a Spring Boot app:
-implementation("dev.liamnet:rung-spring-boot-starter:1.0.1")
+implementation("dev.liamnet:rung-spring-boot-starter:1.1.0")
 ```
 
 The CLI is attached to each [GitHub release](https://github.com/LiamDev06/rung/releases) as a zip.
@@ -68,6 +68,16 @@ tasks.named<ProcessResources>("processResources") {
 }
 ```
 
+## Module order
+
+Modules are migrated in alphabetical order. When a module's tables reference another module's tables, name the referenced module in the module order so it is migrated first:
+
+```java
+MigrationEngine.builder().classpath("com.example.app").moduleOrder("user", "billing").build();
+```
+
+Listed modules are migrated first, in the order given; all other modules follow alphabetically. A listed module with no migrations is an error. Rollbacks are not ordered for you: roll back the modules that depend on another before that one.
+
 ## Plain Java
 
 ```java
@@ -81,6 +91,7 @@ MigrationEngine engine = MigrationEngine.builder()
         .location("classpath:db/migrations")   // or .classpath("com.example.app") / .directory(path)
         .layout("{module}")
         .tablePrefix("schema_history_")
+        .moduleOrder("user")
         .build();
 
 engine.migrate(dataSource);
@@ -101,9 +112,10 @@ rung.enabled=true
 rung.location=classpath:db/migrations
 rung.layout={module}
 rung.table-prefix=rung_migrations_
+rung.module-order=user,billing
 ```
 
-All four are optional. Define your own `MigrationEngine` bean to replace the configured one.
+All five are optional. Define your own `MigrationEngine` bean to replace the configured one.
 
 ## Validating migrations
 
@@ -113,6 +125,7 @@ All four are optional. Define your own `MigrationEngine` bean to replace the con
 - files with no `-- +migrate up` section
 - two files in a module sharing a version (`V1` and `V001` count as the same)
 - module names that are not `[a-z0-9_]+`
+- modules listed in the module order that have no migrations
 - missing `-- +migrate down` sections, reported as warnings
 
 From the CLI, `rung validate --dir <root>` exits non-zero on errors, and on warnings too with `--strict`. In a test:
@@ -135,7 +148,7 @@ rung rollback user 2 --dir src/main/java/com/example/app
 rung validate --dir src/main/java/com/example/app --strict
 ```
 
-`--layout` and `--table-prefix` match the options above. The connection comes from `--url`, `--user` and `--password`, falling back to `DATABASE_URL`, `DATABASE_USER` and `DATABASE_PASSWORD`.
+`--layout`, `--table-prefix` and `--module-order` (comma-separated) match the options above. The connection comes from `--url`, `--user` and `--password`, falling back to `DATABASE_URL`, `DATABASE_USER` and `DATABASE_PASSWORD`.
 
 ## Development
 

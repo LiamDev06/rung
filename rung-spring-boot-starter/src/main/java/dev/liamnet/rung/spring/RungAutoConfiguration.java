@@ -32,6 +32,7 @@ public class RungAutoConfiguration {
                 .location(resolveLocation(properties, beanFactory))
                 .layout(properties.layout())
                 .tablePrefix(properties.tablePrefix())
+                .moduleOrder(properties.moduleOrder().toArray(String[]::new))
                 .build();
     }
 

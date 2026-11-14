@@ -16,6 +16,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,11 +39,17 @@ public final class MigrationEngine {
     private final MigrationSource source;
     private final MigrationLayout layout;
     private final String tablePrefix;
+    private final List<String> moduleOrder;
 
-    private MigrationEngine(final MigrationSource source, final MigrationLayout layout, final String tablePrefix) {
+    private MigrationEngine(
+            final MigrationSource source,
+            final MigrationLayout layout,
+            final String tablePrefix,
+            final List<String> moduleOrder) {
         this.source = source;
         this.layout = layout;
         this.tablePrefix = tablePrefix;
+        this.moduleOrder = moduleOrder;
     }
 
     public static Builder builder() {
@@ -82,7 +90,11 @@ public final class MigrationEngine {
 
     public List<MigrationProblem> validate() {
         final List<MigrationProblem> problems = new ArrayList<>();
-        scriptsByModule().forEach((module, scripts) -> validateModule(module, scripts, problems));
+        final Map<String, Map<String, String>> modules = scriptsByModule();
+        modules.forEach((module, scripts) -> validateModule(module, scripts, problems));
+        missingOrderedModules(modules.keySet())
+                .forEach(module -> problems.add(MigrationProblem.error(
+                        module, "Listed in the module order, but no migrations were found for it.")));
         return problems;
     }
 
@@ -91,19 +103,39 @@ public final class MigrationEngine {
     }
 
     private Map<String, Map<String, String>> scriptsByModule() {
-        final Map<String, Map<String, String>> modules = new TreeMap<>();
+        final Map<String, Map<String, String>> discovered = new TreeMap<>();
         source.loadSqlFiles()
                 .forEach((path, content) -> layout.locate(path)
                         .filter(location -> !location.script().startsWith(DRAFT_PREFIX))
-                        .ifPresent(location -> modules.computeIfAbsent(location.module(), module -> new TreeMap<>())
+                        .ifPresent(location -> discovered
+                                .computeIfAbsent(location.module(), module -> new TreeMap<>())
                                 .put(location.script(), content)));
-        return modules;
+
+        final Map<String, Map<String, String>> ordered = new LinkedHashMap<>();
+        moduleOrder.stream()
+                .filter(discovered::containsKey)
+                .forEach(module -> ordered.put(module, discovered.get(module)));
+        discovered.forEach(ordered::putIfAbsent);
+        return ordered;
     }
 
     private Map<String, List<MigrationFile>> loadModules() {
-        final Map<String, List<MigrationFile>> modules = new TreeMap<>();
-        scriptsByModule().forEach((module, scripts) -> modules.put(module, parseModule(module, scripts)));
+        final Map<String, Map<String, String>> discovered = scriptsByModule();
+        final List<String> missing = missingOrderedModules(discovered.keySet());
+        if (!missing.isEmpty()) {
+            throw new IllegalStateException(
+                    "Module order names " + missing + ", but no migrations were found for them.");
+        }
+
+        final Map<String, List<MigrationFile>> modules = new LinkedHashMap<>();
+        discovered.forEach((module, scripts) -> modules.put(module, parseModule(module, scripts)));
         return modules;
+    }
+
+    private List<String> missingOrderedModules(final Set<String> discovered) {
+        return moduleOrder.stream()
+                .filter(module -> !discovered.contains(module))
+                .toList();
     }
 
     private static List<MigrationFile> parseModule(final String module, final Map<String, String> scripts) {
@@ -265,6 +297,7 @@ public final class MigrationEngine {
         private MigrationSource source;
         private String layoutPattern = DEFAULT_LAYOUT;
         private String historyTablePrefix = DEFAULT_TABLE_PREFIX;
+        private List<String> firstModules = List.of();
 
         private Builder() {}
 
@@ -301,6 +334,11 @@ public final class MigrationEngine {
             return this;
         }
 
+        public Builder moduleOrder(final String... modules) {
+            this.firstModules = List.of(modules);
+            return this;
+        }
+
         public MigrationEngine build() {
             if (source == null) {
                 throw new IllegalStateException("No migration location: call classpath(), directory() or location().");
@@ -311,7 +349,19 @@ public final class MigrationEngine {
                         "Invalid table prefix '" + historyTablePrefix + "': must match [a-z_][a-z0-9_]*.");
             }
 
-            return new MigrationEngine(source, new MigrationLayout(layoutPattern), historyTablePrefix);
+            final Set<String> seen = new HashSet<>();
+            for (final String module : firstModules) {
+                if (!SchemaHistory.isValidModuleName(module)) {
+                    throw new IllegalArgumentException(
+                            "Invalid module '" + module + "' in the module order: must match [a-z0-9_]+.");
+                }
+
+                if (!seen.add(module)) {
+                    throw new IllegalArgumentException("Module order lists '" + module + "' more than once.");
+                }
+            }
+
+            return new MigrationEngine(source, new MigrationLayout(layoutPattern), historyTablePrefix, firstModules);
         }
     }
 }
